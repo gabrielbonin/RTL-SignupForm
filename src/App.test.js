@@ -19,6 +19,37 @@ afterAll(() => {
   console.log('roda uma vez depois de todos os testes')
 })
 
+const typeIntoForm = ({ email, password, confirmPassword }) => {
+  const emailInputElement = screen.getByRole("textbox", {
+    name: /email/i
+  });
+  const passwordInputElement = screen.getByLabelText("Password");
+  const confirmPasswordInputElement = screen.getByLabelText(/confirm password/i)
+  if (email) {
+    userEvent.type(emailInputElement, email);
+  }
+  if (password) {
+    userEvent.type(passwordInputElement, password)
+  }
+  if (confirmPassword) {
+    userEvent.type(confirmPasswordInputElement, confirmPassword)
+  }
+
+  return {
+    emailInputElement,
+    passwordInputElement,
+    confirmPasswordInputElement
+  }
+};
+
+const clickOnSubmitButton = () => {
+  const submitBtnElement = screen.getByRole("button", {
+    name: /submit/i
+  });
+
+  userEvent.click(submitBtnElement);
+}
+
 test("inputs should be initially empty", () => {
 
   const emailInputElement = screen.getByRole("textbox")
@@ -30,45 +61,39 @@ test("inputs should be initially empty", () => {
 });
 
 test("should be able to type an email", () => {
-
-  const emailInputElement = screen.getByRole("textbox", {
-    name: /email/i
+  const { emailInputElement } = typeIntoForm({
+    email: 'selena@gmail.com'
   });
-  userEvent.type(emailInputElement, "selena@gmail.com")
   expect(emailInputElement.value).toBe("selena@gmail.com")
 });
 
 test("should be able to type a password", () => {
-
-  const passwordInputElement = screen.getByLabelText("Password");
-  userEvent.type(passwordInputElement, "password!");
+  const { passwordInputElement } = typeIntoForm({
+    password: "password!",
+  })
   expect(passwordInputElement.value).toBe("password!");
 })
 
 test("should be able to type a confirm password", () => {
+  const { confirmPasswordInputElement } = typeIntoForm({
+    confirmPassword: "password!",
+  });
 
-  const confirmPasswordInputElement = screen.getByLabelText(/confirm password/i);
-  userEvent.type(confirmPasswordInputElement, "password!");
   expect(confirmPasswordInputElement.value).toBe("password!");
-})
+});
 
 test("should email error message on invalid email", () => {
 
-
   const emailErrorElement = screen.queryByText(/the email you input is invalid/i);
-
-  const emailInputElement = screen.getByRole("textbox", {
-    name: /email/i
-  });
-  const submitBtnElement = screen.getByRole("button", {
-    name: /submit/i
-  });
 
 
   expect(emailErrorElement).not.toBeInTheDocument();
 
-  userEvent.type(emailInputElement, "selenagmail.com");
-  userEvent.click(submitBtnElement);
+  typeIntoForm({
+    email: "selena@gmail.com"
+  });
+
+  clickOnSubmitButton();
 
   const emailErrorElement2 = screen.queryByText(/the email you input is invalid/i);
 
@@ -78,55 +103,69 @@ test("should email error message on invalid email", () => {
 
 test("should show password error if the password is less than 5 characters", () => {
 
-
-  const emailInputElement = screen.getByRole("textbox", {
-    name: /email/i
-  });
-
-  const passwordInputElement = screen.getByLabelText("Password");
-
   const passwordErrorElement = screen.queryByText(/the password you entered should contain 5 or more characters/i);
 
-  const submitBtnElement = screen.getByRole("button", {
-    name: /submit/i
+  typeIntoForm({
+    email: "selena@gmail.com",
   });
-
-  userEvent.type(emailInputElement, "selena@gmail.com");
 
   expect(passwordErrorElement).not.toBeInTheDocument()
 
-  userEvent.type(passwordInputElement, "123");
-  userEvent.click(submitBtnElement);
+  typeIntoForm({
+    password: "123"
+  });
+
+  clickOnSubmitButton();
 
   const passwordErrorElementAgain = screen.queryByText(/the password you entered should contain 5 or more characters/i);
-  expect(passwordErrorElementAgain).toBeInTheDocument()
+  expect(passwordErrorElementAgain).toBeInTheDocument();
 });
 
 test("should show confirm password error if the passwords don't match", () => {
 
-
-  const emailInputElement = screen.getByRole("textbox", {
-    name: /email/i
-  });
-
-  const passwordInputElement = screen.getByLabelText("Password");
-
   const confirmPasswordInputElement = screen.getByLabelText(/confirm password/i);
-
   const confirmPasswordErrorElement = screen.queryByText(/the passwords don't match. try again/i);
-
-  const submitBtnElement = screen.getByRole("button", {
-    name: /submit/i
+  typeIntoForm({
+    email: "selena@gmail.com",
+    password: "12345"
   });
 
-  userEvent.type(emailInputElement, "selena@gmail.com");
-  userEvent.type(passwordInputElement, "12345");
-
-  expect(confirmPasswordErrorElement).not.toBeInTheDocument()
+  expect(confirmPasswordErrorElement).not.toBeInTheDocument();
 
   userEvent.type(confirmPasswordInputElement, "123456");
-  userEvent.click(submitBtnElement);
+
+  typeIntoForm({
+    confirmPassword: "123456"
+  });
+
+  clickOnSubmitButton();
 
   const confirmPasswordErrorElementAgain = screen.queryByText(/the passwords don't match. try again/i);
-  expect(confirmPasswordErrorElementAgain).toBeInTheDocument()
+  expect(confirmPasswordErrorElementAgain).toBeInTheDocument();
+});
+
+test("should show no error message if very input is valid", () => {
+  typeIntoForm({
+    email: "selena@gmail.com",
+    password: "123456",
+    confirmPassword: "123456"
+  });
+
+  clickOnSubmitButton();
+
+  const emailErrorElement = screen.queryByText(
+    /the email you input is invalid/i
+  );
+
+  const passwordErrorElement = screen.queryByText(
+    /the password you entered should contain 5 or more characters/i
+  );
+
+  const confirmPasswordErrorElement = screen.queryByText(
+    /the passwords don't match. try again/i
+  );
+
+  expect(emailErrorElement).not.toBeInTheDocument();
+  expect(passwordErrorElement).not.toBeInTheDocument();
+  expect(confirmPasswordErrorElement).not.toBeInTheDocument();
 });
