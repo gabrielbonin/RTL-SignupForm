@@ -2,11 +2,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
-beforeEach(() => {
-  console.log('executa toda vez antes de cada teste');
-  render(<App />);
-});
-
 beforeAll(() => {
   console.log('roda uma vez antes de todos os testes');
 });
@@ -52,6 +47,9 @@ const clickOnSubmitButton = () => {
 };
 
 describe('App', () => {
+  beforeEach(() => {
+    render(<App />);
+  });
   test('inputs should be initially empty', () => {
     const emailInputElement = screen.getByRole('textbox');
     const passwordInputElement = screen.getByLabelText('Password');
